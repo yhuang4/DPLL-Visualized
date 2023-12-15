@@ -3,20 +3,19 @@ def read_cnf_file(file_path):
         lines = file.readlines()
 
     # Extracting information from the header
-    num_vars, num_clauses = 0, 0
-    for line in lines:
+    for i, line in enumerate(lines):
         if line.startswith('p cnf'):
-            _, num_vars, num_clauses = line.split()[1:]
+            nbvar, nbclauses = map(int, line.split()[2:])
+            start = i
             break
 
-    # Parsing clauses
     clauses = []
-    for line in lines:
-        if not line.startswith(('c', 'p')):
-            clause = list(map(int, line.split()[:-1]))
-            clauses.append(clause)
-
-    return int(num_vars), int(num_clauses), clauses
+    for i in range(start + 1, start + nbclauses + 1):
+        line = lines[i]
+        clause = list(map(int, line.split()[:-1]))
+        clauses.append(clause)
+        
+    return nbvar, nbclauses, clauses
 
 # Example usage
 # file_path = 'cnfs/uf20-01.cnf'
