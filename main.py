@@ -3,11 +3,12 @@ import copy
 import sys
 
 class State():
-    def __init__(self, F, A, implied):
+    def __init__(self, F, A, implied, print):
         self.F = F
         self.A = copy.deepcopy(A)
         self.F_A = None
         self.implied = copy.deepcopy(implied)
+        self.print = print
 
     def eval_helper(self, to_eval):
         new_F_A = []
@@ -47,17 +48,21 @@ class State():
         self.eval()
     
     def unit_prop(self):
+        units = []
         while True:
             unit_found = False
             for i, clause in self.F_A:
                 if len(clause) == 1:
                     unit_found = True
+                    units.append(clause[0])
                     self.apply_transform(clause[0])
                     self.implied.append((abs(clause[0]), i))
                     break
 
             if unit_found: continue
             else: break
+        if self.print and len(units):
+            print('Unit propagating: ', '->'.join(list(map(str, units))))
     
 
     def get_conflict(self):
@@ -82,7 +87,7 @@ class State():
                     pass
                 else:
                     C.append(lit)
-            
+        
         C = copy.deepcopy(self.F[conflict][1])
         while True:  # Loop until all implied literals are replaced
             l, i = most_recent_implied(C)
@@ -106,22 +111,33 @@ def dpll(state):
 
     if conflict != None:
         learned_clause = state.learning_procedure(conflict)
+        if state.print:
+            print('Conflict found:   ', state.F[conflict][1])
+            print('Learning clause:  ', learned_clause)
         if len(learned_clause) == 0:
             print('UNSAT%')
             exit()
         elif learned_clause != conflict:
             state.F.append((len(state.F), learned_clause))
+            
+        if state.print: print()
         return None
     else:
-        p = state.choose_atom()
-        p_true = State(state.F, state.A, state.implied)
+        if state.print: print()
 
+        p = state.choose_atom()
+        p_true = State(state.F, state.A, state.implied, state.print)
+
+        if state.print:
+            print(f'Setting {p} to be true')
         p_true.apply_transform(p)
         res_p_true = dpll(p_true)
         if res_p_true != None:
             return res_p_true
 
-        p_false = State(state.F, state.A, state.implied)
+        if state.print:
+            print(f'Setting {p} to be false')
+        p_false = State(state.F, state.A, state.implied, state.print)
         p_false.apply_transform(-p)
 
         res_p_false = dpll(p_false)
@@ -132,7 +148,7 @@ nbvar, nbclauses, F = read_cnf_file(file_path)
 init_F = copy.deepcopy(F)
 F = list(enumerate(F))
 A = [0] * (nbvar + 1)
-S = State(F, A, [])
+S = State(F, A, [], True)
 S.eval()
 
 res = dpll(S)
