@@ -1,6 +1,6 @@
 from input import read_cnf_file
 import copy
-import sys
+import argparse
 
 def assignment_to_string(A, default_true):
     A = A[1:]
@@ -174,13 +174,17 @@ def dpll(state):
 
         res_p_false = dpll(p_false)
         return res_p_false
-    
-file_path = sys.argv[1]
-nbvar, nbclauses, F = read_cnf_file(file_path)
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-p', '--print', action='store_true', help='visualize the decision process')
+parser.add_argument('file_path', type=str, help='path to the cnf file')
+args = parser.parse_args()
+
+nbvar, nbclauses, F = read_cnf_file(args.file_path)
 init_F = copy.deepcopy(F)
 F = list(enumerate(F))
 A = [0] * (nbvar + 1)
-S = State(F, A, [], p=0, print=True)
+S = State(F, A, [], p=0, print=args.print)
 S.eval()
 
 res = dpll(S)
