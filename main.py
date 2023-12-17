@@ -2,6 +2,8 @@ from input import read_cnf_file
 import copy
 import argparse
 
+# Start of util funcitons
+
 def assignment_to_string(A, default_true):
     A = A[1:]
     for i in range(len(A)):
@@ -29,32 +31,32 @@ class TreeNode:
         self.left = None
         self.right = None
 
+# End of util functions
+
 class State():
     def __init__(self, F, A, implied, p, print):
-        self.F = F
-        self.A = copy.deepcopy(A)
-        self.F_A = None
-        self.implied = copy.deepcopy(implied)
+        self.F = F  # Shared formula, potentially with newly learned clauses
+        self.A = copy.deepcopy(A)  # Partial interpretation/assignments
+        self.F_A = None  # Status of F interpreted by A. Notice that this may not always be up to date. 
+        self.implied = copy.deepcopy(implied)  # Implied assignments in chronological order under this state
         self.print = print
         self.TreeNode = TreeNode(p)
 
     def eval_helper(self, to_eval):
+        # Update F_A based on F or F_A
         new_F_A = []
         for i, clause in to_eval:
             new_clause = []
             for lit in clause:
                 if (lit > 0 and self.A[lit] == 1) or (lit < 0 and self.A[-lit] == -1): # lit is true
-                    new_clause = None
+                    new_clause = None  # Delete a clause if it's satisfied
                     break
-                elif self.A[abs(lit)] == 0:  # not assigned
+                elif self.A[abs(lit)] == 0:  # Not assigned
                     new_clause.append(lit)
             if new_clause != None:
                 new_F_A.append((i, new_clause))
         
         self.F_A = new_F_A
-
-    def force_eval(self):
-        self.eval_helper(self.F)
 
     def eval(self):
         if self.F_A == None: 
@@ -69,6 +71,7 @@ class State():
             self.A[-p] = -1
 
     def sat(self):
+        # Returns true if the formula is satisfied under A
         return len(self.F_A) == 0
     
     def apply_transform(self, p):
@@ -76,6 +79,7 @@ class State():
         self.eval()
     
     def unit_prop(self):
+        # Aggressively find unit clauses and set the literals to be true
         units = []
         while True:
             unit_found = False
@@ -89,12 +93,13 @@ class State():
 
             if unit_found: continue
             else: break
+
         if self.print and len(units):
             print('Unit propagating:       ', ' -> '.join(list(map(str, units))))
             print('Partial interpretation: ', assignment_to_string(self.A, default_true=False))
     
-
     def get_conflict(self):
+        # An empty clause in F_A means there's a conflict
         for i, clause in self.F_A:
             if len(clause) == 0:
                 return i
@@ -109,7 +114,14 @@ class State():
             
             return (None, None)
         
-        def resolve(C, C_pr, l):
+        def resolve(C, C_pr):
+            """
+            Example: 
+            l = 7          (most recent implied literal)
+            C = [-1 -7 -5] (conflict, all false)
+            C' = [-1 -6 7] (clause that implied 7, since -1 -6 are false)
+            We need C or C', so by binary resolution, we have [-1 -5 -6]
+            """
             for lit in C_pr:
                 if -lit in C:
                     C.remove(-lit)  # Canceled out by resolution
@@ -119,15 +131,17 @@ class State():
                     C.append(lit)
         
         C = copy.deepcopy(self.F[conflict][1])
-        while True:  # Loop until all implied literals are replaced
+        while True:
+            # Loop until all implied literals are replaced by decision literals
             l, i = most_recent_implied(C)
             if l == None:
                 return C
-            C_pr = self.F[i][1]  # C'
-            resolve(C, C_pr, l)
+            C_pr = self.F[i][1]  # C', the clause that implied l
+            resolve(C, C_pr)
 
     def choose_atom(self):
         # Guaranteed to have non empty formula and no empty clause when called
+        # Choose the first literal (unassigned) in F_A
         return abs(self.F_A[0][1][0])  
     
 
@@ -145,17 +159,23 @@ def dpll(state):
             print('Conflict found:         ', state.F[conflict][1])
             print('Learning clause:        ', learned_clause)
         if len(learned_clause) == 0:
+            # An empty clause is learned so the fomula can never be satisfied
             print('UNSAT%')
             exit()
         elif learned_clause != conflict:
+            # Add newly learned clause to the shared formula
+            # Note that it's in the form (i, clause), which stands for C_i = clause for indexing
             state.F.append((len(state.F), learned_clause))
             
         if state.print: print()
         return None
     else:
+        # No conflict. Proceed to assign new values.
         if state.print: print()
 
         p = state.choose_atom()
+
+        # New state where p is set to true
         p_true = State(state.F, state.A, state.implied, p=p, print=state.print)
 
         if state.print:
@@ -166,6 +186,7 @@ def dpll(state):
         if res_p_true != None:
             return res_p_true
 
+        # Setting p to be true failed. Try setting p to be false.
         p_false = State(state.F, state.A, state.implied, p=-p, print=state.print)
         if state.print:
             state.TreeNode.right = p_false.TreeNode
