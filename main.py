@@ -2,6 +2,15 @@ from input import read_cnf_file
 import copy
 import sys
 
+def assignment_to_string(A, default_true):
+    A = A[1:]
+    for i in range(len(A)):
+        if A[i] == 0:
+            A[i] = str(i + 1) if default_true else '_'
+        else:
+            A[i] = str(A[i] * (i + 1))
+    return " ".join(A)
+
 class State():
     def __init__(self, F, A, implied, print):
         self.F = F
@@ -62,7 +71,8 @@ class State():
             if unit_found: continue
             else: break
         if self.print and len(units):
-            print('Unit propagating: ', '->'.join(list(map(str, units))))
+            print('Unit propagating:       ', ' -> '.join(list(map(str, units))))
+            print('Partial interpretation: ', assignment_to_string(self.A, default_true=False))
     
 
     def get_conflict(self):
@@ -73,6 +83,7 @@ class State():
 
     def learning_procedure(self, conflict):
         def most_recent_implied(C):
+            C = list(map(abs, C))
             for p, i in reversed(self.implied):
                 if abs(p) in C:
                     return (p, i)
@@ -112,8 +123,8 @@ def dpll(state):
     if conflict != None:
         learned_clause = state.learning_procedure(conflict)
         if state.print:
-            print('Conflict found:   ', state.F[conflict][1])
-            print('Learning clause:  ', learned_clause)
+            print('Conflict found:         ', state.F[conflict][1])
+            print('Learning clause:        ', learned_clause)
         if len(learned_clause) == 0:
             print('UNSAT%')
             exit()
@@ -148,18 +159,12 @@ nbvar, nbclauses, F = read_cnf_file(file_path)
 init_F = copy.deepcopy(F)
 F = list(enumerate(F))
 A = [0] * (nbvar + 1)
-S = State(F, A, [], True)
+S = State(F, A, [], print=True)
 S.eval()
 
 res = dpll(S)
 if res != None:
-    res = res[1:]
-    for i in range(len(res)):
-        if res[i] == 0:
-            res[i] = str(i + 1)
-        else:
-            res[i] = str(res[i] * (i + 1))
     print('SAT')
-    print(" ".join(res) + ' 0%')
+    print(assignment_to_string(res, default_true=True) + ' 0%')
 else:
     print('UNSAT%')
