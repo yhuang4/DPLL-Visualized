@@ -1,4 +1,4 @@
-# DPLL Visualized
+# DPLL-Visualized
 
 A DPLL SAT Solver with clause learning and decision visualization. 
 
