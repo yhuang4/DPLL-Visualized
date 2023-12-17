@@ -11,13 +11,32 @@ def assignment_to_string(A, default_true):
             A[i] = str(A[i] * (i + 1))
     return " ".join(A)
 
+def print_tree(node, depth=0, prefix="|- ", skip=False):
+    if not skip:
+        if depth == 0:
+            print(node.p)
+        else:
+            print(f"{prefix * depth}{node.p}")
+
+    if node.left:
+        print_tree(node.left, depth + 1, prefix)
+    if node.right:
+        print_tree(node.right, depth + 1, prefix)
+
+class TreeNode:
+    def __init__(self, p):
+        self.p = p
+        self.left = None
+        self.right = None
+
 class State():
-    def __init__(self, F, A, implied, print):
+    def __init__(self, F, A, implied, p, print):
         self.F = F
         self.A = copy.deepcopy(A)
         self.F_A = None
         self.implied = copy.deepcopy(implied)
         self.print = print
+        self.TreeNode = TreeNode(p)
 
     def eval_helper(self, to_eval):
         new_F_A = []
@@ -137,18 +156,20 @@ def dpll(state):
         if state.print: print()
 
         p = state.choose_atom()
-        p_true = State(state.F, state.A, state.implied, state.print)
+        p_true = State(state.F, state.A, state.implied, p=p, print=state.print)
 
         if state.print:
+            state.TreeNode.left = p_true.TreeNode
             print(f'Setting {p} to be true')
         p_true.apply_transform(p)
         res_p_true = dpll(p_true)
         if res_p_true != None:
             return res_p_true
 
+        p_false = State(state.F, state.A, state.implied, p=-p, print=state.print)
         if state.print:
+            state.TreeNode.right = p_false.TreeNode
             print(f'Setting {p} to be false')
-        p_false = State(state.F, state.A, state.implied, state.print)
         p_false.apply_transform(-p)
 
         res_p_false = dpll(p_false)
@@ -159,10 +180,15 @@ nbvar, nbclauses, F = read_cnf_file(file_path)
 init_F = copy.deepcopy(F)
 F = list(enumerate(F))
 A = [0] * (nbvar + 1)
-S = State(F, A, [], print=True)
+S = State(F, A, [], p=0, print=True)
 S.eval()
 
 res = dpll(S)
+if S.print:
+    if res != None: print()
+    print('Decision Tree:')
+    print_tree(S.TreeNode, skip=True)
+    print()
 if res != None:
     print('SAT')
     print(assignment_to_string(res, default_true=True) + ' 0%')
