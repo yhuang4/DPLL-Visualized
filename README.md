@@ -2,7 +2,7 @@
 
 A DPLL SAT Solver with clause learning and decision visualization. 
 
-Implemented the algorithm described in https://www.cs.ox.ac.uk/people/james.worrell/lec7-2015.pdf.
+Implemented the algorithm described in https://www.cs.ox.ac.uk/people/james.worrell/lecture06.pdf.
 
 Referenced https://www.cs.cmu.edu/~15414/f17/lectures/10-dpll.pdf.
 
