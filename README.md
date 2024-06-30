@@ -2,6 +2,14 @@
 
 A DPLL SAT Solver with clause learning and decision visualization. 
 
+According to Wikipedia, "the Boolean satisfiability problem is the problem of determining if there exists an interpretation that satisfies a given Boolean formula." For example, 
+
+>x = true, y = false, z = false
+
+is a satisfying interpretation of the formula 
+
+>(**x** *or* **y** *or* **z**) and (**not x** *or* **not y** *or* **z**) and (**not x** *or* **y** *or* **not z**).
+
 Implemented the algorithm described in https://www.cs.ox.ac.uk/people/james.worrell/lecture06.pdf.
 
 Referenced https://www.cs.cmu.edu/~15414/f17/lectures/10-dpll.pdf.
@@ -18,7 +26,7 @@ $ python3 main.py [path_to_cnf] [-p]
 
 ### Input format
 
-The input is in cnf format. Refer to http://www.satcompetition.org/2009/format-benchmarks2009.html for detailed description.
+The input is in cnf format. Refer to https://jix.github.io/varisat/manual/0.2.0/formats/dimacs.html for detailed description.
 
 ### Sample files
 
